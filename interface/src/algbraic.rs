@@ -10,10 +10,12 @@ pub enum ConstructorParamList {
     Unnamed(Vec<bool>),
 }
 
+#[allow(dead_code)]
 pub struct AlgEnumMetaInfo {
     constructors: HashMap<syn::Ident, ConstructorParamList>,
 }
 
+#[allow(dead_code)]
 pub struct AlgMatchTypes {
     types: HashMap<syn::Path, AlgEnumMetaInfo>,
 }
