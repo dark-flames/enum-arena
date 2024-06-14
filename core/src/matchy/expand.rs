@@ -1,11 +1,10 @@
-
-use std::mem::replace;
 use proc_macro2::Span;
+use std::mem::replace;
 
-use syn::visit_mut::VisitMut;
-use syn::PatIdent;
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
+use syn::visit_mut::VisitMut;
+use syn::PatIdent;
 
 use interface::*;
 
@@ -19,7 +18,7 @@ struct PatExpandResult {
 pub struct PatExpandVisitor<'meta> {
     tys: &'meta AlgMatchTypes,
     ident_counter: usize,
-    result: Result<PatExpandResult, AlgMatchException>
+    result: Result<PatExpandResult, AlgMatchException>,
 }
 
 impl PatExpandResult {
@@ -32,13 +31,12 @@ impl PatExpandResult {
     }
 }
 
-
 impl<'meta> PatExpandVisitor<'meta> {
     pub fn new(tys: &'meta AlgMatchTypes, ident_counter: usize) -> Self {
         PatExpandVisitor {
             tys,
             ident_counter,
-            result: Ok(PatExpandResult::default())
+            result: Ok(PatExpandResult::default()),
         }
     }
     fn new_ident(&mut self, span: Span) -> syn::Ident {
@@ -47,26 +45,35 @@ impl<'meta> PatExpandVisitor<'meta> {
         syn::Ident::new(&s, span)
     }
 
-    fn replace_deref_pattern(&mut self, span: Span, pat: &mut syn::Pat, result: &mut PatExpandResult) {
+    fn replace_deref_pattern(
+        &mut self,
+        span: Span,
+        pat: &mut syn::Pat,
+        result: &mut PatExpandResult,
+    ) {
         let ident = self.new_ident(span);
         //todo: sub pattern is wildcard or ident
 
-        let pat = replace(pat, syn::Pat::Ident(PatIdent {
-            attrs: vec![],
-            by_ref: None,
-            mutability: None,
-            ident: ident.clone(),
-            subpat: None
-        }));
+        let pat = replace(
+            pat,
+            syn::Pat::Ident(PatIdent {
+                attrs: vec![],
+                by_ref: None,
+                mutability: None,
+                ident: ident.clone(),
+                subpat: None,
+            }),
+        );
 
         result.push(ident, pat);
     }
 }
 
 impl<'meta> VisitMut for PatExpandVisitor<'meta> {
+    #[allow(clippy::redundant_closure_call)]
     fn visit_pat_tuple_struct_mut(&mut self, node: &mut syn::PatTupleStruct) {
-        let params = self.tys.get_unnamed_param_list(&node.path).cloned();  
-        
+        let params = self.tys.get_unnamed_param_list(&node.path).cloned();
+
         let mut try_visit = || {
             let mut result = PatExpandResult::default();
             for (id, el) in Punctuated::pairs_mut(&mut node.elems).enumerate() {
@@ -87,16 +94,17 @@ impl<'meta> VisitMut for PatExpandVisitor<'meta> {
         self.result = try_visit();
     }
 
+    #[allow(clippy::redundant_closure_call)]
     fn visit_pat_struct_mut(&mut self, node: &mut syn::PatStruct) {
-        let params = self.tys.get_named_param_list(&node.path).cloned();  
-        
+        let params = self.tys.get_named_param_list(&node.path).cloned();
+
         let mut try_visit = || {
             let mut result = PatExpandResult::default();
             for el in Punctuated::pairs_mut(&mut node.fields) {
                 let it = el.into_value();
                 let field = match &it.member {
                     syn::Member::Named(id) => Ok(id),
-                    _ => Err(AlgMatchException::UnnamedFieldPattern)
+                    _ => Err(AlgMatchException::UnnamedFieldPattern),
                 }?;
 
                 let is_alg = params.as_ref().map(|p| p[field]).unwrap_or(false);
@@ -115,6 +123,7 @@ impl<'meta> VisitMut for PatExpandVisitor<'meta> {
         self.result = try_visit();
     }
 
+    #[allow(clippy::redundant_closure_call)]
     fn visit_pat_tuple_mut(&mut self, node: &mut syn::PatTuple) {
         let mut try_visit = || {
             let mut result = PatExpandResult::default();

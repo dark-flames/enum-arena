@@ -1,5 +1,5 @@
-use interface::*;
 use super::expr::*;
+use interface::*;
 
 #[allow(dead_code)]
 pub struct AlgMatchBuilder {
@@ -13,7 +13,7 @@ impl AlgMatchBuilder {
         let mut result = AlgMatchBuilder {
             tys,
             target: match_expr.expr.clone(),
-            arms: vec![]
+            arms: vec![],
         };
 
         result.build_arms(&match_expr.arms);
@@ -22,7 +22,7 @@ impl AlgMatchBuilder {
     }
 
     #[allow(dead_code)]
-    fn build_arms(&mut self, _arms: &Vec<syn::Arm>) {
+    fn build_arms(&mut self, _arms: &[syn::Arm]) {
         // collect_body
         // split or pattern
         // recursivly expand

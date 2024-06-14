@@ -2,7 +2,7 @@ use syn::visit::Visit;
 
 #[allow(dead_code)]
 pub struct BindingCollectVisitor {
-    bindings: Vec<(syn::Ident, bool)>
+    bindings: Vec<(syn::Ident, bool)>,
 }
 
 impl<'ast> Visit<'ast> for BindingCollectVisitor {

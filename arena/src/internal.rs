@@ -2,40 +2,47 @@ use std::{cell::UnsafeCell, marker::PhantomData};
 
 pub struct UnsafeArena<T> {
     chunks: UnsafeCell<Vec<Vec<T>>>,
-    capacity: usize
+    capacity: usize,
 }
 
 pub struct UnsafeArenaRef<T> {
     chunk: usize,
     elem: usize,
-    __marker: PhantomData<T>
+    __marker: PhantomData<T>,
 }
 
 impl<T> UnsafeArena<T> {
     pub fn new(capacity: usize) -> Self {
         UnsafeArena {
             chunks: UnsafeCell::new(vec![Vec::with_capacity(capacity)]),
-            capacity
+            capacity,
         }
     }
 
+    /// Get raw pointer over `UnsafeArenaRef`.
+    /// # Safety
+    /// The calling is safe if `r` is constructed by the same arena.
     pub unsafe fn get_raw(&self, r: &UnsafeArenaRef<T>) -> *mut T {
         let chunks = &mut *(self.chunks.get());
         chunks.get_unchecked_mut(r.chunk).get_unchecked_mut(r.elem) as *mut T
     }
 
+    /// Get primitive reference over `UnsafeArenaRef`.
+    /// # Safety
+    /// The calling is safe if `r` is constructed by the same arena.
     pub unsafe fn get<'arena>(&self, r: &UnsafeArenaRef<T>) -> &'arena T {
-        & *self.get_raw(r)
+        &*self.get_raw(r)
     }
 
+    /// Get mutable primitive reference over `UnsafeArenaRef`.
+    /// # Safety
+    /// The calling is safe if `r` is constructed by the same arena.
     pub unsafe fn get_mut<'arena>(&self, r: &UnsafeArenaRef<T>) -> &'arena mut T {
         &mut *self.get_raw(r)
     }
 
     pub fn alloc(&self, t: T) -> UnsafeArenaRef<T> {
-        let chunks = unsafe {
-            &mut *(self.chunks.get())
-        };
+        let chunks = unsafe { &mut *(self.chunks.get()) };
         let chunks_count = chunks.len();
         let chunk = chunks.last_mut().unwrap();
 
@@ -51,7 +58,7 @@ impl<T> UnsafeArena<T> {
         UnsafeArenaRef {
             chunk: chunk_id,
             elem: element_id,
-            __marker: Default::default()
+            __marker: Default::default(),
         }
     }
 }

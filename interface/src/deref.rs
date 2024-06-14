@@ -2,12 +2,24 @@ use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::sync::Arc;
 
+/// Types can be dereferenced purely.
+///
+/// This trait has been implemented for primitive referneces, `std::boxed::Box`, `std::rc::Rc`, and `std::sync::Arc`.
+///
+/// # Safety
+/// The implementation is safe if the `pure_deref` has no side effect
 pub unsafe trait PureDeref {
     type Target: ?Sized;
 
     fn pure_deref(&self) -> &Self::Target;
 }
 
+/// Types can be mutablely dereferenced purely.
+///
+/// This trait has been implemented for primitive refernece and `std::boxed::Box`.
+///
+/// # Safety
+/// The implementation is safe if the `pure_deref_mut` has no side effect
 pub unsafe trait PureDerefMut: PureDeref {
     fn pure_deref_mut(&mut self) -> &mut Self::Target;
 }

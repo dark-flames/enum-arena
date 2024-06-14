@@ -1,5 +1,5 @@
-mod deref;
 mod algbraic;
+mod deref;
 
-pub use deref::{PureDeref, PureDerefMut};
 pub use algbraic::*;
+pub use deref::{PureDeref, PureDerefMut};

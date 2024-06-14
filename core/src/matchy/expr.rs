@@ -12,16 +12,16 @@ pub struct MatchArm {
     pat: syn::Pat,
     condition: Option<syn::Expr>,
     bind: Vec<syn::Ident>,
-    body: MatchBody
+    body: MatchBody,
 }
 
 #[allow(dead_code)]
 pub struct IdentSubst {
-    map: HashMap<syn::Ident, syn::Ident>
+    map: HashMap<syn::Ident, syn::Ident>,
 }
 
 #[allow(dead_code)]
 pub enum MatchBody {
     Expr(IdentSubst, syn::Expr),
-    Match(IdentSubst, Box<Match>)
+    Match(IdentSubst, Box<Match>),
 }

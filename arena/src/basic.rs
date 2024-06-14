@@ -1,30 +1,28 @@
 use std::ops::{Deref, DerefMut};
 
-use interface::{PureDeref, PureDerefMut, default_impl_pure_deref};
+use interface::{default_impl_pure_deref, PureDeref, PureDerefMut};
 
-use crate::traits::*;
 use crate::internal::*;
-
+use crate::traits::*;
 
 pub struct BasicArena<T> {
-    inner: UnsafeArena<T>
+    inner: UnsafeArena<T>,
 }
 
 pub struct BasicArenaRef<'arena, T> {
     arena: &'arena BasicArena<T>,
-    inner: UnsafeArenaRef<T>
+    inner: UnsafeArenaRef<T>,
 }
 
 pub struct BasicArenaMutRef<'arena, T> {
     arena: &'arena BasicArena<T>,
-    inner: UnsafeArenaRef<T>
+    inner: UnsafeArenaRef<T>,
 }
-
 
 impl<T> BasicArena<T> {
     pub fn new(capacity: usize) -> Self {
         BasicArena {
-            inner: UnsafeArena::new(capacity)
+            inner: UnsafeArena::new(capacity),
         }
     }
 }
@@ -33,30 +31,35 @@ impl<T> Arena<T> for BasicArena<T> {
     type Ref<'arena> = BasicArenaRef<'arena, T> where T: 'arena;
     type MutRef<'arena>  = BasicArenaMutRef<'arena, T> where T: 'arena;
 
-    fn alloc<'arena>(&'arena self, t: T) -> BasicArenaRef<'arena, T>{
+    fn alloc(&self, t: T) -> BasicArenaRef<'_, T> {
         BasicArenaRef {
             inner: self.inner.alloc(t),
             arena: self,
         }
     }
 
-    fn alloc_mut<'arena>(&'arena self, t: T) -> BasicArenaMutRef<'arena, T> {
+    fn alloc_mut(&self, t: T) -> BasicArenaMutRef<'_, T> {
         BasicArenaMutRef {
             inner: self.inner.alloc(t),
-            arena: self
+            arena: self,
         }
     }
-    
-    fn copy<'arena>(&'arena self, r: &BasicArenaRef<'arena, T>) -> BasicArenaMutRef<'arena, T> where T: Clone {
-        self.alloc_mut(unsafe {
-            self.inner.get(&r.inner)
-        }.clone())
+
+    fn copy<'arena>(&'arena self, r: &BasicArenaRef<'arena, T>) -> BasicArenaMutRef<'arena, T>
+    where
+        T: Clone,
+    {
+        self.alloc_mut(unsafe { self.inner.get(&r.inner) }.clone())
     }
-    
-    fn copy_mut<'arena>(&'arena self, r: &BasicArenaMutRef<'arena, T>) -> BasicArenaMutRef<'arena, T> where T: Clone {
-        self.alloc_mut(unsafe {
-            self.inner.get(&r.inner)
-        }.clone())
+
+    fn copy_mut<'arena>(
+        &'arena self,
+        r: &BasicArenaMutRef<'arena, T>,
+    ) -> BasicArenaMutRef<'arena, T>
+    where
+        T: Clone,
+    {
+        self.alloc_mut(unsafe { self.inner.get(&r.inner) }.clone())
     }
 }
 
@@ -87,17 +90,23 @@ default_impl_pure_deref!(unsafe impl<'arena, T> PureDeref for BasicArenaMutRef<'
 default_impl_pure_deref!(unsafe impl<'arena, T> PureDerefMut for BasicArenaMutRef<'arena, T>);
 
 impl<'arena, T> ArenaRef<'arena, T> for BasicArenaRef<'arena, T> {
-    type In =  BasicArena<T>;
+    type In = BasicArena<T>;
 
-    fn make_mut(&self) -> BasicArenaMutRef<'arena, T> where T: Clone {
+    fn make_mut(&self) -> BasicArenaMutRef<'arena, T>
+    where
+        T: Clone,
+    {
         self.arena.copy(self)
     }
-} 
+}
 
 impl<'arena, T> ArenaRef<'arena, T> for BasicArenaMutRef<'arena, T> {
     type In = BasicArena<T>;
 
-    fn make_mut(&self) -> BasicArenaMutRef<'arena, T> where T: Clone {
+    fn make_mut(&self) -> BasicArenaMutRef<'arena, T>
+    where
+        T: Clone,
+    {
         self.arena.copy_mut(self)
     }
 }
@@ -108,9 +117,6 @@ impl<'arena, T> ArenaMutRef<'arena, T> for BasicArenaMutRef<'arena, T> {
     fn freeze(self) -> BasicArenaRef<'arena, T> {
         let BasicArenaMutRef { arena, inner } = self;
 
-        BasicArenaRef {
-            arena, inner
-        }
+        BasicArenaRef { arena, inner }
     }
 }
-
