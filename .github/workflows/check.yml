@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint:
+    name: Clippy && Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+            toolchain: nightly
+            components: rustfmt, clippy
+            override: true
+      - name: clippy
+        run: cargo clippy --workspace --all-features -- -D warnings
+      - name: rustfmt
+        run: cargo fmt --all --check
+
+  build-test:
+    name: Cargo test
+    runs-on: ${{matrix.os}}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, windows]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - name: build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --all-features
+      - name: Run test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all --all-features
