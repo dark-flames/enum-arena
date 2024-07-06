@@ -1,7 +1,5 @@
 use std::ops::{Deref, DerefMut};
 
-use interface::{default_impl_pure_deref, PureDeref, PureDerefMut};
-
 use crate::internal::*;
 use crate::traits::*;
 
@@ -84,10 +82,6 @@ impl<'arena, T> DerefMut for BasicArenaMutRef<'arena, T> {
         unsafe { self.arena.inner.get_mut(&self.inner) }
     }
 }
-
-default_impl_pure_deref!(unsafe impl<'arena, T> PureDeref for BasicArenaRef<'arena, T>);
-default_impl_pure_deref!(unsafe impl<'arena, T> PureDeref for BasicArenaMutRef<'arena, T>);
-default_impl_pure_deref!(unsafe impl<'arena, T> PureDerefMut for BasicArenaMutRef<'arena, T>);
 
 impl<'arena, T> ArenaRef<'arena, T> for BasicArenaRef<'arena, T> {
     type In = BasicArena<T>;

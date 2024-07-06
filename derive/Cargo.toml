@@ -1,22 +1,21 @@
 [package]
-name = "algebraic-enum-derive"
+name = "enum-arena-derive"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies.core]
-package = "algebraic-enum-core"
-path = "../core"
+[dependencies.interface]
+package = "enum-arena-interface"
+path = "../interface"
 version = "0.1.0"
 
-[dependencies.arena]
-package = "algebraic-enum-arena"
-path = "../arena"
-version = "0.1.0"
-optional = true
+[dependencies.syn]
+version = "2.0.68"
+features = ["visit", "extra-traits"]
+
+[dependencies]
+thiserror = "1.0.61"
+quote = "1.0.36"
+
 
 [lib]
 proc-macro = true
-
-[features]
-default = []
-arena = ["dep:arena"]

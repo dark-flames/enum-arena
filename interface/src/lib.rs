@@ -1,5 +1,7 @@
-mod algbraic;
-mod deref;
+mod basic;
+mod internal;
+mod traits;
 
-pub use algbraic::*;
-pub use deref::{PureDeref, PureDerefMut};
+pub use basic::*;
+pub use internal::*;
+pub use traits::*;

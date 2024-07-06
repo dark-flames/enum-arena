@@ -1,8 +1,6 @@
-use interface::{PureDeref, PureDerefMut};
-
 use std::ops::{Deref, DerefMut};
 
-pub trait ArenaRef<'arena, T>: Deref + PureDeref {
+pub trait ArenaRef<'arena, T>: Deref {
     type In: Arena<T> + 'arena;
 
     fn make_mut(&self) -> <Self::In as Arena<T>>::MutRef<'arena>
@@ -12,7 +10,7 @@ pub trait ArenaRef<'arena, T>: Deref + PureDeref {
 
 pub trait ArenaImmutRef<'arena, T>: ArenaRef<'arena, T> {}
 
-pub trait ArenaMutRef<'arena, T>: ArenaRef<'arena, T> + DerefMut + PureDerefMut {
+pub trait ArenaMutRef<'arena, T>: ArenaRef<'arena, T> + DerefMut {
     fn freeze(self) -> <Self::In as Arena<T>>::Ref<'arena>;
 }
 

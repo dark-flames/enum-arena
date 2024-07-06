@@ -1,17 +1,15 @@
+mod err;
+mod visitor;
+
 use proc_macro::TokenStream;
+use syn::{parse_macro_input, DeriveInput};
+use visitor::EnumVisitor;
 
-#[proc_macro_derive(Algebraic)]
-pub fn algebraic(_input: TokenStream) -> TokenStream {
-    todo!()
-}
-
-#[proc_macro]
-pub fn alg_match_macro(_input: TokenStream) -> TokenStream {
-    todo!()
-}
-
-#[cfg(feature = "arena")]
 #[proc_macro_derive(Arena)]
-pub fn arena(_input: TokenStream) -> TokenStream {
+pub fn arena(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+
+    let _meta_info = EnumVisitor::from_derive_input(&input).into_result();
+
     todo!()
 }
