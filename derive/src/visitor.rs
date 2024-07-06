@@ -1,25 +1,9 @@
-use std::collections::BTreeMap;
 use std::mem::replace;
 
 use syn::visit::Visit;
-use syn::{Generics, Ident, Visibility};
 
 use crate::err::*;
-
-#[allow(dead_code)]
-pub enum EnumFields {
-    Named(BTreeMap<Ident, (syn::Visibility, syn::Type)>),
-    Unnamed(Vec<(syn::Visibility, syn::Type)>),
-    Unit,
-}
-
-#[allow(dead_code)]
-pub struct EnumMetaInfo {
-    vis: Visibility,
-    name: Ident,
-    generics: Generics,
-    variants: BTreeMap<Ident, EnumFields>,
-}
+use crate::meta::*;
 
 pub struct EnumVisitor {
     res: VisitResult<EnumMetaInfo>,
@@ -28,12 +12,11 @@ pub struct EnumVisitor {
 impl EnumVisitor {
     pub fn from_derive_input(i: &syn::DeriveInput) -> EnumVisitor {
         let mut res = EnumVisitor {
-            res: VisitResult::Ok(EnumMetaInfo {
-                vis: i.vis.clone(),
-                name: i.ident.clone(),
-                generics: i.generics.clone(),
-                variants: BTreeMap::new(),
-            }),
+            res: VisitResult::Ok(EnumMetaInfo::new(
+                i.vis.clone(),
+                i.ident.clone(),
+                i.generics.clone(),
+            )),
         };
 
         res.visit_data(&i.data);
@@ -79,7 +62,7 @@ impl<'ast> Visit<'ast> for EnumVisitor {
                     syn::Fields::Unit => EnumFields::Unit,
                 };
 
-                info.variants.insert(name, fields);
+                info.add_variant(name, fields);
 
                 Ok(info)
             } else {
