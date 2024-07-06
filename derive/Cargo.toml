@@ -15,6 +15,7 @@ features = ["visit", "extra-traits"]
 [dependencies]
 thiserror = "1.0.61"
 quote = "1.0.36"
+proc-macro2 = "1.0.86"
 
 
 [lib]
