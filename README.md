@@ -1,2 +1,2 @@
-# algebraic-enum
-Algebraic data type support for Rust[WIP]
+# enum-arena
+arena for enumerations[WIP]
