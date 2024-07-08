@@ -1,22 +1,22 @@
 use std::mem::replace;
-
 use syn::visit::Visit;
+use syn::{Data, DeriveInput, Variant};
 
 use crate::err::*;
 use crate::meta::*;
 
 pub struct EnumVisitor {
-    res: VisitResult<EnumMetaInfo>,
+    res: VisitResult<DataMetaInfo>,
 }
 
 impl EnumVisitor {
-    pub fn from_derive_input(i: &syn::DeriveInput) -> EnumVisitor {
+    pub fn from_derive_input(i: &DeriveInput) -> EnumVisitor {
+        let constr = match &i.data {
+            Data::Enum(_) => DataMetaInfo::new_enum,
+            _ => DataMetaInfo::new_struct,
+        };
         let mut res = EnumVisitor {
-            res: VisitResult::Ok(EnumMetaInfo::new(
-                i.vis.clone(),
-                i.ident.clone(),
-                i.generics.clone(),
-            )),
+            res: Ok(constr(i.vis.clone(), i.ident.clone(), i.generics.clone())),
         };
 
         res.visit_data(&i.data);
@@ -24,14 +24,14 @@ impl EnumVisitor {
         res
     }
 
-    pub fn into_result(self) -> VisitResult<EnumMetaInfo> {
+    pub fn into_result(self) -> VisitResult<DataMetaInfo> {
         self.res
     }
 }
 
 impl<'ast> Visit<'ast> for EnumVisitor {
-    fn visit_variant(&mut self, i: &'ast syn::Variant) {
-        let try_handle = |res: VisitResult<EnumMetaInfo>| {
+    fn visit_variant(&mut self, i: &'ast Variant) {
+        let try_handle = |res: VisitResult<DataMetaInfo>| {
             if let Ok(mut info) = res {
                 let name = i.ident.clone();
 

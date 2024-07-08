@@ -13,7 +13,7 @@ pub fn arena(input: TokenStream) -> TokenStream {
     let meta_info = EnumVisitor::from_derive_input(&input).into_result();
 
     let output = match meta_info {
-        Ok(_info) => todo!(),
+        Ok(info) => info.impl_token_stream(),
         Err(e) => e.into_compile_error(),
     };
 
