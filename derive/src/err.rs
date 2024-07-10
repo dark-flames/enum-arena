@@ -3,8 +3,12 @@ use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]
 pub enum VisitErr {
-    #[error("Unknown error")]
-    Unknown,
+    #[error("Wrapper name is expected to be a path")]
+    NonPathWrapper(Span),
+    #[error("Wrapper name is expected to be a path with an unique segment")]
+    UnexpectedWrapperPath(Span),
+    #[error("Wrapper name does not support path argument")]
+    WrapperPathArg(Span),
 }
 
 pub type VisitResult<T> = Result<T, VisitErr>;
@@ -12,7 +16,9 @@ pub type VisitResult<T> = Result<T, VisitErr>;
 impl VisitErr {
     fn span(&self) -> Span {
         match self {
-            VisitErr::Unknown => Span::call_site(),
+            VisitErr::NonPathWrapper(s) => *s,
+            VisitErr::UnexpectedWrapperPath(s) => *s,
+            VisitErr::WrapperPathArg(s) => *s,
         }
     }
 
