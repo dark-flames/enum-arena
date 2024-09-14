@@ -9,6 +9,12 @@ pub enum VisitErr {
     UnexpectedWrapperPath(Span),
     #[error("Wrapper name does not support path argument")]
     WrapperPathArg(Span),
+    #[error("Wrapper only has one argument, but {1} provided")]
+    WrapperArgCount(Span, usize),
+    #[error("Wrapper only support angle bracketed argument")]
+    WrapperArgFormat(Span),
+    #[error("Unsupported wrapper argument, only type is supported")]
+    WrapperArg(Span),
 }
 
 pub type VisitResult<T> = Result<T, VisitErr>;
@@ -19,6 +25,9 @@ impl VisitErr {
             VisitErr::NonPathWrapper(s) => *s,
             VisitErr::UnexpectedWrapperPath(s) => *s,
             VisitErr::WrapperPathArg(s) => *s,
+            VisitErr::WrapperArgCount(s, _) => *s,
+            VisitErr::WrapperArgFormat(s) => *s,
+            VisitErr::WrapperArg(s) => *s,
         }
     }
 

@@ -1,14 +1,20 @@
-use std::collections::BTreeSet;
+use crate::meta::DataMetaInfo;
 use syn::visit::Visit;
-use syn::{Type, Variant};
+use syn::Variant;
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 #[allow(dead_code)]
-pub struct BoxedTypeVisitor {
-    tys: BTreeSet<Type>,
+pub struct BoxedTypeVisitor<'meta> {
+    meta: &'meta mut DataMetaInfo,
 }
 
-impl<'ast> Visit<'ast> for BoxedTypeVisitor {
+impl<'meta> BoxedTypeVisitor<'meta> {
+    pub fn new(meta: &'meta mut DataMetaInfo) -> Self {
+        BoxedTypeVisitor { meta }
+    }
+}
+
+impl<'meta, 'ast> Visit<'ast> for BoxedTypeVisitor<'meta> {
     fn visit_variant(&mut self, _node: &'ast Variant) {
         todo!()
     }
