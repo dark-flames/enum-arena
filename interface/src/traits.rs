@@ -33,6 +33,12 @@ pub trait Arena<T> {
     fn copy_mut<'arena>(&'arena self, r: &Self::MutRef<'arena>) -> Self::MutRef<'arena>
     where
         T: Clone;
+
+    fn len(&self) -> usize;
+
+    fn is_empty(&self) -> bool;
+
+    fn capacity(&self) -> usize;
 }
 
 pub trait EnumRef<'arena, E, T>: ArenaRef<'arena, T>

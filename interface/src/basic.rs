@@ -59,6 +59,18 @@ impl<T> Arena<T> for BasicArena<T> {
     {
         self.alloc_mut(unsafe { self.inner.get(&r.inner) }.clone())
     }
+
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
+    fn capacity(&self) -> usize {
+        self.inner.capacity()
+    }
 }
 
 impl<'arena, T> Deref for BasicArenaRef<'arena, T> {

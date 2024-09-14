@@ -1,15 +1,14 @@
-use crate::gen::Env;
 use proc_macro2::{Span, TokenStream};
 use thiserror::Error;
 
+use crate::gen::Env;
+
 #[derive(Error, Debug, Clone)]
 pub enum VisitErr {
-    #[error("Wrapper name is expected to be a path")]
-    NonPathWrapper(Span),
-    #[error("Wrapper name is expected to be a path with an unique segment")]
-    UnexpectedWrapperPath(Span),
-    #[error("Wrapper name does not support path argument")]
-    WrapperPathArg(Span),
+    #[error("Cannot parse this literal as an ident: {1}")]
+    CannotParseAsIdent(Span, String),
+    #[error("Attribute must be a literal")]
+    NotLitAttribute(Span),
 }
 #[derive(Error, Debug, Clone)]
 pub enum GenerateErr {
@@ -36,9 +35,8 @@ pub trait IntoCompileError: ToString {
 impl IntoCompileError for VisitErr {
     fn span(&self) -> Span {
         match self {
-            VisitErr::NonPathWrapper(s) => *s,
-            VisitErr::UnexpectedWrapperPath(s) => *s,
-            VisitErr::WrapperPathArg(s) => *s,
+            VisitErr::NotLitAttribute(s) => *s,
+            VisitErr::CannotParseAsIdent(s, _) => *s,
         }
     }
 }

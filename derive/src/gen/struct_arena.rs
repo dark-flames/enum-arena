@@ -1,9 +1,10 @@
+use proc_macro2::TokenStream;
+use quote::quote;
+
 use crate::err::GenerateResult;
 use crate::gen::struct_ref::StructRefGenerator;
 use crate::gen::{CodeGenerator, Env};
 use crate::meta::DataMetaInfo;
-use proc_macro2::TokenStream;
-use quote::quote;
 
 pub struct StructArenaGenerator;
 
@@ -62,7 +63,7 @@ impl StructArenaGenerator {
             }
 
             impl<#generics_param> #arena<#path> for #arena_path {
-                type Ref<#arena_lifetime> = #ref_path where #path: #arena_lifetime
+                type Ref<#arena_lifetime> = #ref_path where #path: #arena_lifetime;
                 type MutRef<#arena_lifetime>  = #mut_ref_path where #path: #arena_lifetime;
 
                 fn alloc(&self, t: #path) -> Self::Ref<'_> {
@@ -79,7 +80,7 @@ impl StructArenaGenerator {
                     }
                 }
 
-                fn copy<#arena_lifetime>(&#arena_lifetime self, r: &Self::Ref<#arena_lifetime) -> #mut_ref_path
+                fn copy<#arena_lifetime>(&#arena_lifetime self, r: &Self::Ref<#arena_lifetime>) -> Self::MutRef<#arena_lifetime>
                 where
                     #path: Clone,
                 {
@@ -88,12 +89,24 @@ impl StructArenaGenerator {
 
                 fn copy_mut<#arena_lifetime>(
                     &#arena_lifetime self,
-                    r: &#mut_ref_path,
-                ) -> #mut_ref_path
+                    r: &Self::MutRef<#arena_lifetime>,
+                ) -> Self::MutRef<#arena_lifetime>
                 where
                     #path: Clone,
                 {
                     self.alloc_mut(unsafe { self.inner.get(&r.inner) }.clone())
+                }
+
+                fn len(&self) -> usize {
+                    self.inner.len()
+                }
+
+                fn capacity(&self) -> usize {
+                    self.inner.capacity()
+                }
+
+                fn is_empty(&self) -> bool {
+                    self.inner.is_empty()
                 }
             }
         })

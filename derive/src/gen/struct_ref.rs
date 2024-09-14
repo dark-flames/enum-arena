@@ -1,12 +1,10 @@
+use proc_macro2::{Span, TokenStream};
+use quote::quote;
+use syn::Lifetime;
+
 use crate::err::GenerateResult;
 use crate::gen::{CodeGenerator, Env};
 use crate::meta::DataMetaInfo;
-use proc_macro2::{Span, TokenStream};
-use quote::quote;
-use syn::{
-    AngleBracketedGenericArguments, GenericArgument, GenericParam, Generics, Lifetime,
-    LifetimeParam,
-};
 
 pub struct StructRefGenerator;
 
@@ -34,28 +32,6 @@ impl StructRefGenerator {
         Lifetime::new("'_arena", Span::call_site())
     }
 
-    pub fn push_arena_lifetime(mut generics: Generics) -> Generics {
-        generics.params.insert(
-            0,
-            GenericParam::Lifetime(LifetimeParam {
-                attrs: vec![],
-                lifetime: Self::arena_lifetime(),
-                colon_token: None,
-                bounds: Default::default(),
-            }),
-        );
-
-        generics
-    }
-
-    pub fn push_arena_lifetime_arg(
-        mut args: AngleBracketedGenericArguments,
-    ) -> AngleBracketedGenericArguments {
-        args.args
-            .insert(0, GenericArgument::Lifetime(Self::arena_lifetime()));
-
-        args
-    }
     fn struct_ref(meta: &DataMetaInfo, env: &Env) -> GenerateResult<TokenStream> {
         let vis = &meta.vis;
         let id = &meta.name;
@@ -66,7 +42,7 @@ impl StructRefGenerator {
         let generics = meta.generics_token_steam(Some(Self::arena_lifetime()));
         let generics_param = meta.generics_param_token_steam(Some(Self::arena_lifetime()));
         let where_clause = &meta.generics.where_clause;
-        let generic_args = &meta.generic_args;
+        let generic_args = meta.generic_args_token_stream(None);
         let ref_generic_args = meta.generic_args_token_stream(Some(Self::arena_lifetime()));
         let interface = &env.interface_path;
 
@@ -127,7 +103,7 @@ impl StructRefGenerator {
 
                 fn make_mut(&self) -> #mut_ref_path
                 where
-                    #path: Clone, { self.arena.copy(self) }
+                    #path: Clone, { self.arena.copy_mut(self) }
             }
 
             impl<#generics_param> #arena_immut_ref<#arena_lifetime, #path> for #ref_path #where_clause {}

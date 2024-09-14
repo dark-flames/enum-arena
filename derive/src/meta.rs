@@ -1,18 +1,19 @@
-use crate::err::{IntoTokenStream, VisitErr, VisitResult};
-use crate::gen::{generators, Env};
-use crate::visitor::EnumVisitor;
+use std::collections::{BTreeMap, HashSet};
+
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use std::collections::{BTreeMap, HashSet};
 use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{
-    parse_quote, AngleBracketedGenericArguments, Attribute, Data, DeriveInput, Expr, ExprPath,
-    Fields, GenericArgument, GenericParam, Generics, Ident, Lifetime, LifetimeParam, Meta, Path,
-    PathArguments, PathSegment, Type, TypePath, Visibility,
+    parse_quote, parse_str, AngleBracketedGenericArguments, Attribute, Data, DeriveInput, Expr,
+    ExprLit, ExprPath, Fields, GenericArgument, GenericParam, Generics, Ident, Lifetime,
+    LifetimeParam, Lit, Meta, Path, PathArguments, PathSegment, Type, TypePath, Visibility,
 };
 
-#[allow(dead_code)]
+use crate::err::{IntoTokenStream, VisitErr, VisitResult};
+use crate::gen::{generators, Env};
+use crate::visitor::EnumVisitor;
+
 #[derive(Debug)]
 pub struct DataMetaInfo {
     pub vis: Visibility,
@@ -52,7 +53,7 @@ impl DataMetaInfo {
     }
 
     fn parse_arena_ident(attrs: &[Attribute], data_name: &Ident) -> VisitResult<Ident> {
-        Self::parse_attr_ident(attrs, "arena")
+        Self::parse_attr_ident(attrs, "arena_id")
             .unwrap_or_else(|| Ok(format_ident!("{}Arena", data_name)))
     }
 
@@ -67,20 +68,16 @@ impl DataMetaInfo {
                 None
             }
         }) {
-            Some(Expr::Path(path)) => {
-                if path.path.segments.len() > 1 {
-                    Some(Err(VisitErr::UnexpectedWrapperPath(path.span())))
-                } else if let Some(seg) = path.path.segments.last() {
-                    if seg.arguments.is_empty() {
-                        Some(Ok(seg.ident.clone()))
-                    } else {
-                        Some(Err(VisitErr::WrapperPathArg(seg.arguments.span())))
-                    }
-                } else {
-                    Some(Err(VisitErr::UnexpectedWrapperPath(path.span())))
-                }
+            Some(Expr::Lit(ExprLit {
+                lit: Lit::Str(str), ..
+            })) => {
+                let s = str.value();
+                Some(
+                    parse_str(&s)
+                        .map_err(|e| VisitErr::CannotParseAsIdent(str.span(), e.to_string())),
+                )
             }
-            Some(e) => Some(Err(VisitErr::NonPathWrapper(e.span()))),
+            Some(e) => Some(Err(VisitErr::NotLitAttribute(e.span()))),
             None => None,
         }
     }
@@ -186,10 +183,6 @@ impl DataMetaInfo {
         parse_quote! {
             #i<#ty>
         }
-    }
-
-    pub fn arena_ident(&self) -> Ident {
-        format_ident!("{}Arena", self.name)
     }
 
     pub fn generic_args_token_stream(&self, arena_lifetime: Option<Lifetime>) -> TokenStream {

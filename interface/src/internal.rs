@@ -46,11 +46,11 @@ impl<T> UnsafeArena<T> {
         let chunks_count = chunks.len();
         let chunk = chunks.last_mut().unwrap();
 
-        let (chunk_id, element_id, chunk) = if chunk.capacity() == 0 {
+        let (chunk_id, element_id, chunk) = if chunk.capacity() == chunk.len() {
             chunks.push(Vec::with_capacity(self.capacity));
             (chunks_count, 0, chunks.last_mut().unwrap())
         } else {
-            (chunks_count - 1, chunk.len() - 1, chunk)
+            (chunks_count - 1, chunk.len(), chunk)
         };
 
         chunk.push(t);
@@ -60,5 +60,25 @@ impl<T> UnsafeArena<T> {
             elem: element_id,
             __marker: Default::default(),
         }
+    }
+
+    pub fn len(&self) -> usize {
+        let chunks = unsafe { &*(self.chunks.get()) };
+        let chunks_count = chunks.len();
+        let chunk = chunks.last().unwrap();
+
+        self.capacity * (chunks_count - 1) + chunk.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        let chunks = unsafe { &*(self.chunks.get()) };
+        chunks.len() == 1 && chunks.last().unwrap().is_empty()
+    }
+
+    pub fn capacity(&self) -> usize {
+        let chunks = unsafe { &*(self.chunks.get()) };
+        let chunk = chunks.last().unwrap();
+
+        chunk.capacity()
     }
 }

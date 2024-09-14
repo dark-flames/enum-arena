@@ -1,11 +1,11 @@
-use crate::err::VisitResult;
-use crate::meta::DataMetaInfo;
 use syn::visit::Visit;
 use syn::visit_mut::VisitMut;
 use syn::{DataEnum, Field, Fields, FieldsNamed, FieldsUnnamed, Type, Variant};
 
+use crate::err::VisitResult;
+use crate::meta::DataMetaInfo;
+
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct EnumVisitor<'meta> {
     meta: &'meta mut DataMetaInfo,
     res: VisitResult<()>,
