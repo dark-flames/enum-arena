@@ -1,26 +1,28 @@
 use crate::err::{VisitErr, VisitResult};
-use crate::visitor::BoxedTypeVisitor;
+use crate::visitor::EnumVisitor;
 use proc_macro2::TokenStream;
 use quote::format_ident;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{
-    AngleBracketedGenericArguments, Attribute, Data, DeriveInput, Expr, ExprPath, GenericArgument,
-    GenericParam, Generics, Ident, Meta, Path, PathArguments, PathSegment, Type, TypePath,
-    Visibility,
+    parse_quote, AngleBracketedGenericArguments, Attribute, Data, DeriveInput, Expr, ExprPath,
+    Fields, GenericArgument, GenericParam, Generics, Ident, Meta, Path, PathArguments, PathSegment,
+    Type, TypePath, Visibility,
 };
 
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct DataMetaInfo {
     pub vis: Visibility,
+    pub is_enum: bool,
     pub name: Ident,
     pub generics_params: Generics,
     pub generic_args: AngleBracketedGenericArguments,
     pub aliases: HashSet<Type>,
     pub wrapper_ident: Ident,
     pub boxed: HashSet<Type>,
+    pub constructors: BTreeMap<Ident, (Fields, Option<Expr>)>,
 }
 
 impl DataMetaInfo {
@@ -118,21 +120,6 @@ impl DataMetaInfo {
         Ok(aliases)
     }
 
-    fn visit_boxed_types(&mut self, input: &DeriveInput) {
-        match &input.data {
-            Data::Enum(e) => {
-                let mut visitor = BoxedTypeVisitor::new(self);
-                visitor.visit_data_enum(e);
-            }
-            _ => {
-                self.boxed.insert(Type::Path(TypePath {
-                    qself: None,
-                    path: Self::single_ident_path(input.ident.clone()),
-                }));
-            }
-        }
-    }
-
     pub fn from_derive_input(input: &DeriveInput) -> VisitResult<Self> {
         let wrapper_ident = Self::wrapper_ident(&input.attrs, &input.ident)?;
         let aliases = Self::parse_aliases(&input.attrs)?;
@@ -140,53 +127,42 @@ impl DataMetaInfo {
 
         let mut result = DataMetaInfo {
             vis: input.vis.clone(),
+            is_enum: matches!(&input.data, Data::Enum(_)),
             name: input.ident.clone(),
             generics_params: input.generics.clone(),
             generic_args,
             aliases,
             wrapper_ident,
             boxed: Default::default(),
+            constructors: Default::default(),
         };
 
-        result.visit_boxed_types(input);
+        match &input.data {
+            Data::Enum(e) => {
+                let mut visitor = EnumVisitor::new(&mut result);
+                visitor.visit_data_enum(e);
+            }
+            _ => {
+                result.boxed.insert(Type::Path(TypePath {
+                    qself: None,
+                    path: Self::single_ident_path(input.ident.clone()),
+                }));
+            }
+        }
 
         Ok(result)
     }
 
-    pub fn push_boxed_type(&mut self, ty: Type) {
-        if !self.aliases.contains(&ty) {
-            self.boxed.insert(ty);
+    pub fn push_boxed_type(&mut self, ty: &Type) {
+        if !self.aliases.contains(ty) {
+            self.boxed.insert(ty.clone());
         }
     }
 
-    pub fn try_get_raw_ty(&self, ty: &Type) -> VisitResult<Type> {
-        if let Type::Path(TypePath { path, .. }) = ty {
-            if path.segments.len() > 1 {
-                if let Some(seg) = path.segments.last() {
-                    if seg.ident == self.wrapper_ident {
-                        match &seg.arguments {
-                            PathArguments::AngleBracketed(args) if args.args.len() != 1 => {
-                                Err(VisitErr::WrapperArgCount(args.span(), args.args.len()))
-                            }
-                            PathArguments::AngleBracketed(args) => {
-                                match args.args.first().unwrap() {
-                                    GenericArgument::Type(ty_args) => Ok(ty_args.clone()),
-                                    _ => Err(VisitErr::WrapperArg(args.span())),
-                                }
-                            }
-                            _ => Err(VisitErr::WrapperArgFormat(seg.span())),
-                        }
-                    } else {
-                        Ok(ty.clone())
-                    }
-                } else {
-                    Ok(ty.clone())
-                }
-            } else {
-                Ok(ty.clone())
-            }
-        } else {
-            Ok(ty.clone())
+    pub fn boxed_ty(&self, ty: &Type) -> Type {
+        let i = &self.wrapper_ident;
+        parse_quote! {
+            #i<#ty>
         }
     }
 

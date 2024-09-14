@@ -10,7 +10,7 @@ version = "0.1.0"
 
 [dependencies.syn]
 version = "2.0.68"
-features = ["visit", "extra-traits"]
+features = ["visit", "visit-mut", "extra-traits"]
 
 [dependencies]
 thiserror = "1.0.61"
