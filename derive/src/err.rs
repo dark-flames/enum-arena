@@ -1,3 +1,4 @@
+use crate::gen::Env;
 use proc_macro2::{Span, TokenStream};
 use thiserror::Error;
 
@@ -51,19 +52,19 @@ impl IntoCompileError for GenerateErr {
 }
 
 pub trait IntoTokenStream {
-    fn into_token_stream(self) -> TokenStream;
+    fn into_token_stream(self, env: &Env) -> TokenStream;
 }
 
 impl IntoTokenStream for TokenStream {
-    fn into_token_stream(self) -> TokenStream {
+    fn into_token_stream(self, _env: &Env) -> TokenStream {
         self
     }
 }
 
 impl<T: IntoTokenStream, E: IntoCompileError> IntoTokenStream for Result<T, E> {
-    fn into_token_stream(self) -> TokenStream {
+    fn into_token_stream(self, env: &Env) -> TokenStream {
         match self {
-            Ok(t) => t.into_token_stream(),
+            Ok(t) => t.into_token_stream(env),
             Err(e) => e.into_compile_error(),
         }
     }

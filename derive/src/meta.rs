@@ -1,5 +1,5 @@
 use crate::err::{IntoTokenStream, VisitErr, VisitResult};
-use crate::gen::generators;
+use crate::gen::{generators, Env};
 use crate::visitor::EnumVisitor;
 use proc_macro2::TokenStream;
 use quote::format_ident;
@@ -18,10 +18,11 @@ pub struct DataMetaInfo {
     pub vis: Visibility,
     pub is_enum: bool,
     pub name: Ident,
-    pub generics_params: Generics,
+    pub generics: Generics,
     pub generic_args: AngleBracketedGenericArguments,
     pub aliases: HashSet<Type>,
     pub ref_id: Ident,
+    pub mut_ref_id: Ident,
     pub arena_id: Ident,
     pub boxed: HashSet<Type>,
     pub constructors: BTreeMap<Ident, (Fields, Option<Expr>)>,
@@ -41,8 +42,13 @@ impl DataMetaInfo {
     }
 
     fn parse_ref_ident(attrs: &[Attribute], data_name: &Ident) -> VisitResult<Ident> {
-        Self::parse_attr_ident(attrs, "box")
+        Self::parse_attr_ident(attrs, "ref_id")
             .unwrap_or_else(|| Ok(format_ident!("{}Ref", data_name)))
+    }
+
+    fn parse_mut_ref_ident(attrs: &[Attribute], data_name: &Ident) -> VisitResult<Ident> {
+        Self::parse_attr_ident(attrs, "mut_ref_id")
+            .unwrap_or_else(|| Ok(format_ident!("{}MutRef", data_name)))
     }
 
     fn parse_arena_ident(attrs: &[Attribute], data_name: &Ident) -> VisitResult<Ident> {
@@ -134,6 +140,7 @@ impl DataMetaInfo {
 
     pub fn from_derive_input(input: &DeriveInput) -> VisitResult<Self> {
         let ref_id = Self::parse_ref_ident(&input.attrs, &input.ident)?;
+        let mut_ref_id = Self::parse_mut_ref_ident(&input.attrs, &input.ident)?;
         let arena_id = Self::parse_arena_ident(&input.attrs, &input.ident)?;
         let aliases = Self::parse_aliases(&input.attrs)?;
         let generic_args = Self::generic_args(&input.generics)?;
@@ -142,10 +149,11 @@ impl DataMetaInfo {
             vis: input.vis.clone(),
             is_enum: matches!(&input.data, Data::Enum(_)),
             name: input.ident.clone(),
-            generics_params: input.generics.clone(),
+            generics: input.generics.clone(),
             generic_args,
             aliases,
             ref_id,
+            mut_ref_id,
             arena_id,
             boxed: Default::default(),
             constructors: Default::default(),
@@ -186,13 +194,13 @@ impl DataMetaInfo {
 }
 
 impl IntoTokenStream for DataMetaInfo {
-    fn into_token_stream(self) -> TokenStream {
+    fn into_token_stream(self, env: &Env) -> TokenStream {
         let res = generators
             .iter()
             .try_fold(TokenStream::new(), |prev, generator| {
-                generator.gen_onto(&self, prev)
+                generator.gen_onto(&self, env, prev)
             });
 
-        res.into_token_stream()
+        res.into_token_stream(env)
     }
 }
