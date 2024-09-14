@@ -2,14 +2,14 @@ use crate::err::{IntoTokenStream, VisitErr, VisitResult};
 use crate::gen::{generators, Env};
 use crate::visitor::EnumVisitor;
 use proc_macro2::TokenStream;
-use quote::format_ident;
+use quote::{format_ident, quote};
 use std::collections::{BTreeMap, HashSet};
 use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{
     parse_quote, AngleBracketedGenericArguments, Attribute, Data, DeriveInput, Expr, ExprPath,
-    Fields, GenericArgument, GenericParam, Generics, Ident, Meta, Path, PathArguments, PathSegment,
-    Type, TypePath, Visibility,
+    Fields, GenericArgument, GenericParam, Generics, Ident, Lifetime, LifetimeParam, Meta, Path,
+    PathArguments, PathSegment, Type, TypePath, Visibility,
 };
 
 #[allow(dead_code)]
@@ -190,6 +190,78 @@ impl DataMetaInfo {
 
     pub fn arena_ident(&self) -> Ident {
         format_ident!("{}Arena", self.name)
+    }
+
+    pub fn generic_args_token_stream(&self, arena_lifetime: Option<Lifetime>) -> TokenStream {
+        if let Some(t) = arena_lifetime {
+            let mut args = self.generic_args.clone();
+            args.args.insert(0, GenericArgument::Lifetime(t));
+            quote! {
+                #args
+            }
+        } else if self.generic_args.args.is_empty() {
+            TokenStream::new()
+        } else {
+            let args = &self.generic_args;
+
+            quote! {
+                #args
+            }
+        }
+    }
+
+    pub fn generics_token_steam(&self, arena_lifetime: Option<Lifetime>) -> TokenStream {
+        if let Some(t) = arena_lifetime {
+            let mut generics = self.generics.clone();
+            generics.params.insert(
+                0,
+                GenericParam::Lifetime(LifetimeParam {
+                    attrs: vec![],
+                    lifetime: t,
+                    colon_token: None,
+                    bounds: Default::default(),
+                }),
+            );
+
+            quote! {
+                #generics
+            }
+        } else if self.generic_args.args.is_empty() {
+            TokenStream::new()
+        } else {
+            let generics = &self.generics;
+
+            quote! {
+                #generics
+            }
+        }
+    }
+
+    pub fn generics_param_token_steam(&self, arena_lifetime: Option<Lifetime>) -> TokenStream {
+        if let Some(t) = arena_lifetime {
+            let mut params = self.generics.params.clone();
+            params.insert(
+                0,
+                GenericParam::Lifetime(LifetimeParam {
+                    attrs: vec![],
+                    lifetime: t,
+                    colon_token: None,
+                    bounds: Default::default(),
+                }),
+            );
+
+            quote! {
+                #params
+            }
+        } else if self.generic_args.args.is_empty() {
+            TokenStream::new()
+        } else {
+            let params = &self.generics;
+
+            quote! {
+                #params
+            }
+        }
     }
 }
 

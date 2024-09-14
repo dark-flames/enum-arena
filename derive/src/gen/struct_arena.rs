@@ -35,10 +35,10 @@ impl StructArenaGenerator {
         let arena_id = &meta.arena_id;
         let arena_lifetime = StructRefGenerator::arena_lifetime();
         let ref_generic_args =
-            StructRefGenerator::push_arena_lifetime_arg(meta.generic_args.clone());
-        let generic_args = &meta.generic_args;
-        let generics = &meta.generics;
-        let generics_param = &meta.generics.params;
+            meta.generic_args_token_stream(Some(StructRefGenerator::arena_lifetime()));
+        let generic_args = meta.generic_args_token_stream(None);
+        let generics = meta.generics_token_steam(None);
+        let generics_param = meta.generics_param_token_steam(None);
 
         let arena = &env.arena;
         let unsafe_arena = &env.unsafe_arena;
@@ -49,14 +49,14 @@ impl StructArenaGenerator {
         let mut_ref_path = quote! { #mut_ref_id #ref_generic_args };
 
         Ok(quote! {
-            #vis #arena_id #generics {
+            #vis struct #arena_id #generics {
                 inner: #unsafe_arena<#path>,
             }
 
             impl<#generics_param> #arena_path {
                 pub fn new(capacity: usize) -> Self {
                     #arena_id {
-                        inner: UnsafeArena::new(capacity),
+                        inner: #unsafe_arena::new(capacity),
                     }
                 }
             }
@@ -72,14 +72,14 @@ impl StructArenaGenerator {
                     }
                 }
 
-                fn alloc_mut(&self, t: T) -> Self::MutRef<'_> {
+                fn alloc_mut(&self, t: #path) -> Self::MutRef<'_> {
                     #mut_ref_id {
                         inner: self.inner.alloc(t),
                         arena: self,
                     }
                 }
 
-                fn copy<#arena_lifetime>(&#arena_lifetime self, r: &Self::Ref<#arena_lifetime) -> BasicArenaMutRef<#arena_lifetime, #path>
+                fn copy<#arena_lifetime>(&#arena_lifetime self, r: &Self::Ref<#arena_lifetime) -> #mut_ref_path
                 where
                     #path: Clone,
                 {
@@ -88,8 +88,8 @@ impl StructArenaGenerator {
 
                 fn copy_mut<#arena_lifetime>(
                     &#arena_lifetime self,
-                    r: &BasicArenaMutRef<#arena_lifetime, #path>,
-                ) -> BasicArenaMutRef<#arena_lifetime, #path>
+                    r: &#mut_ref_path,
+                ) -> #mut_ref_path
                 where
                     #path: Clone,
                 {

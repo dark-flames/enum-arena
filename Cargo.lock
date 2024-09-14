@@ -31,7 +31,7 @@ name = "enum-arena-derive"
 version = "0.1.0"
 dependencies = [
  "enum-arena-interface",
-    "lazy_static",
+ "lazy_static",
  "proc-macro-warning",
  "proc-macro2",
  "quote",

@@ -31,7 +31,7 @@ impl CodeGenerator for StructRefGenerator {
 
 impl StructRefGenerator {
     pub fn arena_lifetime() -> Lifetime {
-        Lifetime::new("_arena", Span::call_site())
+        Lifetime::new("'_arena", Span::call_site())
     }
 
     pub fn push_arena_lifetime(mut generics: Generics) -> Generics {
@@ -63,11 +63,11 @@ impl StructRefGenerator {
         let mut_ref_id = &meta.mut_ref_id;
         let arena_id = &meta.arena_id;
         let arena_lifetime = Self::arena_lifetime();
-        let generics = Self::push_arena_lifetime(meta.generics.clone());
-        let generics_param = &generics.params;
-        let where_clause = &generics.where_clause;
+        let generics = meta.generics_token_steam(Some(Self::arena_lifetime()));
+        let generics_param = meta.generics_param_token_steam(Some(Self::arena_lifetime()));
+        let where_clause = &meta.generics.where_clause;
         let generic_args = &meta.generic_args;
-        let ref_generic_args = Self::push_arena_lifetime_arg(meta.generic_args.clone());
+        let ref_generic_args = meta.generic_args_token_stream(Some(Self::arena_lifetime()));
         let interface = &env.interface_path;
 
         let deref = &env.deref;
@@ -82,12 +82,12 @@ impl StructRefGenerator {
         let mut_ref_path = quote! { #mut_ref_id #ref_generic_args };
 
         Ok(quote! {
-            #vis #ref_id #generics {
+            #vis struct #ref_id #generics {
                 arena: &#arena_lifetime #arena_path,
                 inner: #interface::UnsafeArenaRef<#path>
             }
 
-            #vis #mut_ref_id #generics {
+            #vis struct #mut_ref_id #generics {
                 arena: &#arena_lifetime #arena_path,
                 inner: #interface::UnsafeArenaRef<#path>
             }
@@ -109,7 +109,7 @@ impl StructRefGenerator {
             }
 
             impl<#generics_param> #deref_mut for #mut_ref_path #where_clause {
-                fn deref_mut(&self) -> &mut Self::Target {
+                fn deref_mut(&mut self) -> &mut Self::Target {
                     unsafe { self.arena.inner.get_mut(&self.inner) }
                 }
             }
@@ -133,7 +133,7 @@ impl StructRefGenerator {
             impl<#generics_param> #arena_immut_ref<#arena_lifetime, #path> for #ref_path #where_clause {}
 
             impl<#generics_param> #arena_mut_ref<#arena_lifetime, #path> for #mut_ref_path #where_clause {
-                fn freeze(self) -> BasicArenaRef<'arena, T> {
+                fn freeze(self) -> #ref_path {
                     let #mut_ref_id { arena, inner } = self;
 
                     #ref_id { arena, inner }

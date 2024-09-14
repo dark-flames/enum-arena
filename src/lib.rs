@@ -1,3 +1,3 @@
 pub use derive::*;
 
-pub use core::*;
+pub use interface::*;
